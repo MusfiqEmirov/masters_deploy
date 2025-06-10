@@ -1,27 +1,21 @@
-# Python image
+# Python 3.11 üzərində qurulmuş image
 FROM python:3.11-slim
 
-# Workdir
+# İşçi direktoriyanı təyin edin
 WORKDIR /app
 
-# Sistemdə lazım olacaq paketlər
-RUN apt-get update && apt-get install -y gcc
+# Sistem asılılıqlarını quraşdırın
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Layihə fayllarını konteynerə kopyala
+# Python asılılıqlarını quraşdırmaq üçün requirements.txt kopyalayın
+COPY requirements.txt .
+
+# Python asılılıqlarını quraşdırın
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY . .
 
-# Pipenv quraşdır
-RUN pip install pipenv
-
-# Virtual env və dependensiləri quraşdır
-RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy --ignore-pipfile
-
-# Migrate və collectstatic (əgər lazımdırsa)
-RUN .venv/bin/python manage.py collectstatic --noinput || true
-RUN .venv/bin/python manage.py migrate || true
-
-# Portu aç
-EXPOSE 8000
-
-# Başlatma komandası
-CMD [".venv/bin/gunicorn", "masters.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
